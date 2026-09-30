@@ -89,7 +89,7 @@ flowchart LR
 
 Para realizarmos os testes:
 
-1. Importe o arquivo [LAB-DEVOPS-DEPLOY001.car](https://github.com/rchafik/oic/blob/main/deployments/LAB-DEVOPS-DEPLOY001.car) no seu ambiente OIC:
+1. Importe o arquivo [LAB-DEVOPS-DEPLOY001.car](https://github.com/rchafik/oicDevops/blob/main/deployments/LAB-DEVOPS-DEPLOY001.car) no seu ambiente OIC:
 
   Projects -> Clique no botão `Add` -> Utilize a Opção Import (Upload a CAR File)
 
@@ -914,7 +914,7 @@ scripts/download_oci_generic_artifact.sh \
 ```
 
 ## Referências
-- Repositório com todos os arquivos [rchafik/oic](https://github.com/rchafik/oic)
+- Repositório com todos os arquivos [rchafik/oicDevops](https://github.com/rchafik/oicDevops)
 - [You Must Use OAuth with the Oracle Integration Developer APIs](https://docs.oracle.com/en/cloud/paas/application-integration/integrations-user/you-must-use-oauth-oracle-integration-developer-apis.html)
 - [Call the Developer APIs with Client Credentials](https://docs.oracle.com/en/cloud/paas/application-integration/integrations-user/call-developer-apis-client-credentials.html)
 - [Developer API for Oracle Integration to integrate applications](https://docs.oracle.com/en/cloud/paas/application-integration/rest-api/index.html)
