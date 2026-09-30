@@ -1,0 +1,48 @@
+# macOS
+.DS_Store
+
+# Editors and IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.python-version
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Fn / local development
+.fn/
+.serverless/
+
+# Environment and secrets
+.env
+.env.*
+*.pem
+*.key
+
+# Build outputs
+build-output/
+*.log
+
+# Temporary files
+tmp/
+temp/
+
+# gitleaks output files
+gitleaks-*.json

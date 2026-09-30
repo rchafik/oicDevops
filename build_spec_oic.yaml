@@ -1,0 +1,55 @@
+version: 0.1
+component: build
+timeoutInSeconds: 1200
+shell: bash
+failImmediatelyOnError: true
+
+env:
+  variables:
+    DEPLOYMENTS_DIR: "deployments"
+  exportedVariables:
+    - ARTIFACT_PATH
+    - ARTIFACT_VERSION
+
+steps:
+  - type: Command
+    name: "Select OIC CAR from GitHub repo"
+    command: |
+      set -Eeuo pipefail
+
+      : "${CAR_FILE_NAME:?Parametro CAR_FILE_NAME nao informado}"
+
+      echo "Selected CAR file: ${CAR_FILE_NAME}"
+
+      if [[ ! "$CAR_FILE_NAME" =~ ^[A-Za-z0-9._-]+\.car$ ]]; then
+        echo "Invalid CAR_FILE_NAME: ${CAR_FILE_NAME}"
+        exit 1
+      fi
+
+      SRC="${OCI_PRIMARY_SOURCE_DIR}/${DEPLOYMENTS_DIR}/${CAR_FILE_NAME}"
+      OUT_DIR="${OCI_PRIMARY_SOURCE_DIR}/out"
+      OUT_CAR="${OUT_DIR}/project.car"
+
+      if [[ ! -f "$SRC" ]]; then
+        echo "CAR file not found: $SRC"
+        find "${OCI_PRIMARY_SOURCE_DIR}/${DEPLOYMENTS_DIR}" -maxdepth 1 -type f -name "*.car" -printf "%f\n" | sort
+        exit 1
+      fi
+
+      mkdir -p "$OUT_DIR"
+      cp "$SRC" "$OUT_CAR"
+
+      ARTIFACT_PATH="oic/projects/${CAR_FILE_NAME}"
+      ARTIFACT_VERSION="${OCI_BUILD_RUN_ID}"
+
+      export ARTIFACT_PATH
+      export ARTIFACT_VERSION
+
+      echo "Artifact path: ${ARTIFACT_PATH}"
+      echo "Artifact version: ${ARTIFACT_VERSION}"
+      ls -lh "$OUT_CAR"
+
+outputArtifacts:
+  - name: oic-project-car
+    type: BINARY
+    location: out/project.car

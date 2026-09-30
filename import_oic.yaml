@@ -1,0 +1,113 @@
+version: 0.1
+component: command
+timeoutInSeconds: 3600
+shell: bash
+failImmediatelyOnError: true
+
+env:
+  variables:
+    # Substitua os placeholders abaixo pelos valores do seu ambiente.
+    TOKEN_URL: "https://<identity-domain-url>/oauth2/v1/token"
+    OIC_SCOPE: "https://<oic-scope-host>:443/ic/api/"
+    OIC_HOST: "https://<oic-design-time-host>"
+    OIC_INSTANCE: "<oic-instance-name>"
+    ARTIFACT_REPOSITORY_ID: "<artifact-registry-repository-ocid>"
+    CAR_FILE: "/workspace/deploy.car"
+
+  vaultVariables:
+    OIC_BASIC_AUTH_B64: "<vault-secret-ocid-with-client-id-client-secret-base64>"
+
+steps:
+  - type: Command
+    name: "Download CAR from Artifact Registry"
+    timeoutInSeconds: 300
+    command: |
+      set -Eeuo pipefail
+
+      : "${ARTIFACT_PATH:?Parametro ARTIFACT_PATH nao informado}"
+      : "${ARTIFACT_VERSION:?Parametro ARTIFACT_VERSION nao informado}"
+
+      echo "OCI CLI version:"
+      oci --version
+
+      echo "Downloading CAR artifact..."
+      echo "Repository: ${ARTIFACT_REPOSITORY_ID}"
+      echo "Artifact path: ${ARTIFACT_PATH}"
+      echo "Artifact version: ${ARTIFACT_VERSION}"
+
+      if ! oci artifacts generic artifact download-by-path \
+        --repository-id "$ARTIFACT_REPOSITORY_ID" \
+        --artifact-path "$ARTIFACT_PATH" \
+        --artifact-version "$ARTIFACT_VERSION" \
+        --file "$CAR_FILE" \
+        --no-retry \
+        --connection-timeout 10 \
+        --read-timeout 60 \
+        2> /workspace/oci_download_error.log; then
+        echo "Failed to download artifact from OCI Artifact Registry."
+        echo "OCI CLI error:"
+        cat /workspace/oci_download_error.log
+        exit 1
+      fi
+
+      test -s "$CAR_FILE"
+      ls -lh "$CAR_FILE"
+
+  - type: Command
+    name: "Get OIC access token"
+    timeoutInSeconds: 300
+    command: |
+      set -Eeuo pipefail
+
+      echo "Requesting OIC access token..."
+
+      TOKEN_RESPONSE=$(curl -sS -f --request POST \
+        --url "$TOKEN_URL" \
+        --header "Authorization: Basic ${OIC_BASIC_AUTH_B64}" \
+        --header "content-type: application/x-www-form-urlencoded;charset=UTF-8" \
+        --data-urlencode "grant_type=client_credentials" \
+        --data-urlencode "scope=${OIC_SCOPE}")
+
+      ACCESS_TOKEN=$(printf '%s' "$TOKEN_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token',''))")
+
+      if [[ -z "$ACCESS_TOKEN" ]]; then
+        echo "Access token was not returned by OAuth endpoint."
+        exit 1
+      fi
+
+      printf '%s' "$ACCESS_TOKEN" > /workspace/oic_access_token
+      chmod 600 /workspace/oic_access_token
+
+      echo "Access token acquired."
+
+  - type: Command
+    name: "Import OIC project CAR"
+    timeoutInSeconds: 1800
+    command: |
+      set -Eeuo pipefail
+
+      ACCESS_TOKEN="$(cat /workspace/oic_access_token)"
+      IMPORT_URL="${OIC_HOST%/}/ic/api/integration/v1/projects/archive?integrationInstance=${OIC_INSTANCE}"
+
+      echo "Importing CAR into OIC..."
+      echo "Target OIC instance: ${OIC_INSTANCE}"
+
+      HTTP_CODE=$(curl -sS \
+        -o /workspace/oic_import_response.txt \
+        -w "%{http_code}" \
+        -X POST \
+        -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+        -F "file=@${CAR_FILE}" \
+        -F "type=application/octet-stream" \
+        "$IMPORT_URL")
+
+      echo "Import HTTP code: ${HTTP_CODE}"
+
+      if [[ "$HTTP_CODE" != "200" && "$HTTP_CODE" != "201" && "$HTTP_CODE" != "202" && "$HTTP_CODE" != "204" ]]; then
+        echo "OIC project import failed."
+        cat /workspace/oic_import_response.txt || true
+        exit 1
+      fi
+
+      echo "OIC project CAR imported successfully."
+      cat /workspace/oic_import_response.txt || true
