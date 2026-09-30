@@ -4,6 +4,8 @@
 
 Neste documento vamos abordar como trabalhar com APIs de Desenvolvimento do **OIC** e um exemplo de como implementar uma chamada de API numa esteira de CI/CD utilizando o **OCI DevOps**.
 
+![capa](images/00_capa_artigo.png "capa")
+
 ### OIC:
 - como acionar as APIs de Desenvolvimento do Oracle Integration Cloud (OIC);
 - como configurar um confidential application e o que é necessário para acionar as APIs de Desenvolvimeno do OIC;
